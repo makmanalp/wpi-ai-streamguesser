@@ -42,26 +42,30 @@
                 (_get-most-common best (hash-iterate-next FREQUENCIES index) bestIndex)))))
 
 ;; Majority class.  Just use the most common occurence.
+;; majority-class : list[string] -> list[string]
 (define (majority-class test_set)
   (if (empty? test_set)
       empty
       (cons (get-most-common) (majority-class (rest test_set)))))
 
 ;; Get the accuracy of the answer set based on the test set.
+;; accuracy : list[string] list[string] -> number
 (define (accuracy answer test_set)
-  (/ (_accuracy answer test_set 0)
+  (/ (num-correct-answers answer test_set)
      (length answer)))
 
-(define (_accuracy answer test_set num)
+;; Get the number of correct answers
+;; num-correct-answers : list[string] list[string] -> number
+(define (num-correct-answers answer test_set (num 0))
   (if (empty? answer)
       num
       (if (string=? (first answer)
                     (first test_set))
-          (_accuracy (rest answer) (rest test_set) (+ num 1))
-          (_accuracy (rest answer) (rest test_set) num))))
-  
-;; get the random guess rate based on how many symbols there were.
+          (num-correct-answers (rest answer) (rest test_set) (+ num 1))
+          (num-correct-answers (rest answer) (rest test_set) num))))
+
+;; Get the random guess rate based on how many symbols there were.
+;; get-random-guess-rate :  void -> number
 (define (get-random-guess-rate)
   (/ 1 (hash-count FREQUENCIES)))
-
 
