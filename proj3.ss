@@ -3,13 +3,16 @@
 (require 2htdp/batch-io)
 
 ;; Parse a file and return a list of strings.
+;; parse-file: string -> list[string]
 (define (parse-file filename)
   (filter (lambda (x) (not (= (string-length x) 0)))
           (regexp-split "[,(\r)(\n)]" (read-file filename))))
 
+;; Global for frequencies
 (define FREQUENCIES (make-hash))
 
-;; _count-occurences  list(string) : changes FREQUENCIES
+;; Update frequencies list from a sequence
+;; count-occurences  list(string) : changes FREQUENCIES
 (define (count-occurences training_set)
   (if (empty? training_set)
       FREQUENCIES
