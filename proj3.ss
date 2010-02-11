@@ -5,7 +5,8 @@
 ;; Parse a file and return a list of strings.
 ;; parse-file: string -> list[string]
 (define (parse-file filename)
-  (regexp-split ",|\r?\n" (read-file filename)))
+  (filter (lambda (x) (not (string=? x "")))
+          (regexp-split ",|\r?\n|\r" (read-file filename))))
 
 ;; Update frequencies list from a sequence
 ;; count-occurences : list(string) -> hash
