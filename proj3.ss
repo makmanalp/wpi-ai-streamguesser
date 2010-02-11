@@ -27,19 +27,19 @@
 ;; Get the most common symbol on the FREQUENCIES set.
 (define (get-most-common)
   (let ((firstIndex (hash-iterate-first FREQUENCIES)))
-    (hash-iterate-key FREQUENCIES (get-most-common-acc (hash-iterate-value FREQUENCIES firstIndex) 
+    (hash-iterate-key FREQUENCIES (_get-most-common (hash-iterate-value FREQUENCIES firstIndex) 
                                                        firstIndex
                                                        firstIndex))))
 
-(define (get-most-common-acc best index bestIndex)
+(define (_get-most-common best index bestIndex)
       (let ((curr (hash-iterate-value FREQUENCIES index)))
         (if (false? (hash-iterate-next FREQUENCIES index))
             (if (> curr best)
                 index
                 bestIndex) 
             (if (> curr best)
-                (get-most-common-acc curr (hash-iterate-next FREQUENCIES index) index)
-                (get-most-common-acc best (hash-iterate-next FREQUENCIES index) bestIndex)))))
+                (_get-most-common curr (hash-iterate-next FREQUENCIES index) index)
+                (_get-most-common best (hash-iterate-next FREQUENCIES index) bestIndex)))))
 
 ;; Majority class.  Just use the most common occurence.
 (define (majority-class test_set)
@@ -49,16 +49,16 @@
 
 ;; Get the accuracy of the answer set based on the test set.
 (define (accuracy answer test_set)
-  (/ (accuracy-acc answer test_set 0)
+  (/ (_accuracy answer test_set 0)
      (length answer)))
 
-(define (accuracy-acc answer test_set num)
+(define (_accuracy answer test_set num)
   (if (empty? answer)
       num
       (if (string=? (first answer)
                     (first test_set))
-          (accuracy-acc (rest answer) (rest test_set) (+ num 1))
-          (accuracy-acc (rest answer) (rest test_set) num))))
+          (_accuracy (rest answer) (rest test_set) (+ num 1))
+          (_accuracy (rest answer) (rest test_set) num))))
   
 ;; get the random guess rate based on how many symbols there were.
 (define (get-random-guess-rate)
