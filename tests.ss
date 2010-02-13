@@ -5,7 +5,7 @@
 (define TEST_SET (parse-file "test.txt"))
 
 ;; Count occurences
-(define FREQUENCIES (count-occurences TRAINING_SET))
+(define FREQUENCIES (count-occurences TRAINING_SET 1))
 
 (printf "WARMUP~n")
 (printf "-------------~n")
