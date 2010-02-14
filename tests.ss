@@ -1,3 +1,5 @@
+(#%require scheme)
+
 (include "proj3.ss")
 
 ;; TESTS

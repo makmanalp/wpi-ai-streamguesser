@@ -1,1 +1,1 @@
-duck,duck,goose,duck,duck,goose
+duck,duck,duck,goose
