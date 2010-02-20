@@ -81,8 +81,8 @@
 
 ;;
 (define (run train test n)
-  (let ((chains (reverse (make-chains n train))))
-    (predict-ngram test n chains)))
+  (let ((chains (reverse (make-chains n (parse-file train)))))
+    (accuracy (predict-ngram (parse-file test) n chains) (parse-file test))))
 
 ;; Use chains of n.
 (define (predict-ngram test-set n chains (prev empty))
