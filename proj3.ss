@@ -90,8 +90,9 @@
   (let ((chains (reverse (make-chains n (parse-file train)))))
     (set! NUM_READ (length (parse-file train)))
     (let ((ans (predict-ensemble (parse-file test) n chains weights)))
-      (printf "Accuracy: ~a~n" (accuracy ans (parse-file test)))
-      (printf "Guess: ~a~n" ans))))
+      ;;(printf "Accuracy: ~a~n" (accuracy ans (parse-file test)))
+      ;;(printf "Guess: ~a~n" ans))))
+      (accuracy ans (parse-file test)))))
 
 
 ;; Use chains of n.
@@ -229,4 +230,38 @@
 ;; get-random-guess-rate :  void -> number
 (define (get-random-guess-rate freq)
   (/ 1.0 (hash-count (hash-ref (first freq) ""))))
+
+(define (fact x)
+  (if (= x 0)
+      1
+      (* x (fact (- x 1)))))
+
+(define (choose n r)
+  (/ (fact n) (* (fact r) (fact (- n r)))))
+
+(define (perm n r)
+  (/ (fact n) (fact (- n r))))
+
+(define (gen-inverse n choices func)
+  (if (= n 0)
+      empty
+      (cons (/ 1 (func choices n)) (gen-inverse (- n 1) choices func))))
+
+
+(define (crunch n max len (best empty) (acc 0))
+  (printf "Iteration: ~a, Best: ~a, Accuracy: ~a~n" n best acc)
+  (if (= n 0)
+      (list best acc)
+      (letrec ((tuple (rand-list len max))
+               (newacc (run-ensemble "data/Training_5B.txt" "data/Testing_5B.txt" len tuple)))
+       (printf "This time: ~a, Accuracy: ~a~n" tuple newacc)
+        (if (> newacc acc)
+            (crunch (- n 1) max len tuple newacc)
+            (crunch (- n 1) max len best acc)))))
+
+(define (rand-list len max)
+  (if (= len 0)
+      empty
+      (cons (random max) (rand-list (- len 1) max))))
+
 
