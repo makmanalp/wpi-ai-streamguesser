@@ -24,6 +24,13 @@
 ;; TEST CASES ;;
 ;;;;;;;;;;;;;;;;
 
+;; missing:
+;; - count-occurences
+;; - add-to-hash?
+;; - make-chains?
+;; - 
+
+
 ;; File parsing
 (check-expect (parse-file "parse_test.txt") (list "hello" "my" "name" "is" "thomas" "liu"))
 
@@ -37,8 +44,16 @@
 (count-occurences (list "a" "b" "a" "a" "b") 2)
 "should return #hash((b . #hash((a . 1))) (a . #hash((b . 2) (a . 1))) ( . #hash((a . 1))))"
 
-;; Getting the most common symbol in freq.
+;; Add something to the main freq hash.
 (define test-hash (make-hash))
+(add-to-hash test-hash "foo" "bar")
+(check-expect (hash-ref (hash-ref test-hash "foo") "bar") 1)
+(add-to-hash test-hash "baz" "qux") ;;check multiple adds
+(add-to-hash test-hash "baz" "qux")
+(check-expect (hash-ref (hash-ref test-hash "baz") "qux") 2)
+
+;; Getting the most common symbol in freq.
+(set! test-hash (make-hash))
 (add-to-hash test-hash "" "a")
 (check-expect (get-most-common (hash-ref test-hash "")) "a")
 (add-to-hash test-hash "" "b")
