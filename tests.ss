@@ -25,14 +25,12 @@
 ;;;;;;;;;;;;;;;;
 
 ;; missing:
-;; - count-occurences
-;; - add-to-hash?
-;; - make-chains?
+;; - count-occurences, any way to fix the testcase?
 ;; - 
 
 
 ;; File parsing
-(check-expect (parse-file "parse_test.txt") (list "hello" "my" "name" "is" "thomas" "liu"))
+(check-expect (parse-file "testfiles/parse_test.txt") (list "hello" "my" "name" "is" "thomas" "liu"))
 
 ;; Getting the nth value in a list.
 (check-expect (get-nth (list 1 2 3 4) 0) 1)
@@ -71,6 +69,9 @@
 (hash-set! test-hash "d" 16)
 (hash-set! test-hash "e" 11)
 (check-expect (hash-sum test-hash) 184)
+
+;; Test making chains up to size n.
+
 
 ;; Get the most probable, list of tuples where each tuple is (sym, prob)
 (check-expect (most-probable (list (list 'x 1) (list 'y 2))) 'y)
