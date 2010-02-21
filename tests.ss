@@ -70,7 +70,10 @@
 (hash-set! test-hash "e" 11)
 (check-expect (hash-sum test-hash) 184)
 
-;; Test making chains up to size n.
+;; Test making chains up to size n. TODO: add more of these
+(define data (parse-file "testfiles/chains_test.txt"))
+(define chn (reverse (make-chains 3 data)))
+(check-expect (hash-ref (hash-ref (first chn) "") "duck") 4)
 
 
 ;; Get the most probable, list of tuples where each tuple is (sym, prob)

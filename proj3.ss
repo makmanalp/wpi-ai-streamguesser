@@ -264,4 +264,15 @@
       empty
       (cons (random max) (rand-list (- len 1) max))))
 
+;; pretty-print a hash (TODO: fix this when i'm not lazy)
+(define (hash-print h (spaces 0))
+  (hash-map
+    h
+    (lambda (k v)
+      (printf "~a~n" k)
+      (cond
+        [(hash? v)
+         (hash-print v (+ 1 spaces))]
+        [else
+          (printf "~a~n" v)]))))
 
