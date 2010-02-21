@@ -2,6 +2,8 @@
 
 (require 2htdp/batch-io)
 
+(define NUM_READ 0)
+
 ;; Parse a file and return a list of strings.
 ;; parse-file: string -> list[string]
 (define (parse-file filename)
@@ -81,8 +83,22 @@
 
 ;;
 (define (run train test n)
+  (set! NUM_READ 0)
   (let ((chains (reverse (make-chains n (parse-file train)))))
-    (accuracy (predict-ngram (parse-file test) n chains) (parse-file test))))
+    (set! NUM_READ (length (parse-file train)))
+    (let ((ans (predict-ngram (parse-file test) n chains)))
+      (printf "Accuracy: ~a~n" (accuracy ans (parse-file test)))
+      (printf "Guess: ~a~n" ans))))
+;;      (printf "Real: ~a~n" (parse-file test)))))
+
+(define (run-ensemble train test n weights)
+  (set! NUM_READ 0)
+  (let ((chains (reverse (make-chains n (parse-file train)))))
+    (set! NUM_READ (length (parse-file train)))
+    (let ((ans (predict-ensemble (parse-file test) n chains weights)))
+      (printf "Accuracy: ~a~n" (accuracy ans (parse-file test)))
+      (printf "Guess: ~a~n" ans))))
+;;      (printf "Real: ~a~n" (parse-file test)))))
 
 ;; Use chains of n.
 (define (predict-ngram test-set n chains (prev empty))
@@ -90,15 +106,33 @@
       empty
       (let  ;; This is the guess!
           ((guess (generate-guess prev chains)))
-        ;; Update the model.
+        ;; Update the model.en
         (let ((curr (first test-set)))
+          (set! NUM_READ (+ NUM_READ 1))
           (add-to-model prev chains curr)
           (if (= n 1)
               (cons guess (predict-ngram (rest test-set) n chains empty))
               (if (> (length prev) (- n 2))
                   (cons guess (predict-ngram (rest test-set) n chains (append (rest prev) (list curr))))
                   (cons guess (predict-ngram (rest test-set) n chains (append prev (list curr))))))))))
-        
+
+
+;; Use chains of n.
+(define (predict-ensemble test-set n chains weights (prev empty))
+  (if (empty? test-set)
+      empty
+      (let  ;; This is the guess!
+          ((guess (generate-ensemble-guess prev chains weights)))
+        ;; Update the model.
+        (let ((curr (first test-set)))
+          (set! NUM_READ (+ NUM_READ 1))
+          (add-to-model prev chains curr)
+          (if (= n 1)
+              (cons guess (predict-ensemble (rest test-set) n chains weights empty))
+              (if (> (length prev) (- n 2))
+                  (cons guess (predict-ensemble (rest test-set) n chains weights (append (rest prev) (list curr))))
+                  (cons guess (predict-ensemble (rest test-set) n chains weights (append prev (list curr))))))))))
+
 
 (define (add-to-model prev chains curr)
   (if (empty? chains)
@@ -114,7 +148,7 @@
                           curr)))))
 
 (define (generate-guess prev chains)
-    (if (empty? chains)
+  (if (empty? chains)
       empty
       (let ((prev-chain (string-join prev ""))
             (longest-chain (last chains)))
@@ -125,6 +159,49 @@
                                 (drop-right chains 1))
                 (generate-guess (drop-right prev 1)
                                 (drop-right chains 1)))))))
+
+(define (generate-ensemble-guess prev chains weights)
+  (most-probable (map (lambda (freq-tuple weight) (list (first freq-tuple) (* weight (/ (second freq-tuple) (third freq-tuple)))))
+                      (reverse (get-most-common-for-each chains prev))
+                      weights)))
+
+
+
+(define (hash-sum hash)
+  (local ((define ans 0))
+    (hash-for-each hash
+                   (lambda (k v) (set! ans (+ ans v))))
+    ans))
+
+(define (most-probable prob (curr 0) (sym ""))
+  (if (empty? prob)
+      sym
+      (let ((curr-sym (first prob)))
+        (if (> (second curr-sym) curr)
+            (most-probable (rest prob) (second curr-sym) (first curr-sym))
+            (most-probable (rest prob) curr sym)))))
+
+
+(define (get-most-common-for-each chains prev)
+  (if (empty? chains)
+      empty
+      (letrec ((prev-chain (string-join prev ""))
+               (longest-chain (last chains)))
+        (if (hash-has-key? longest-chain prev-chain)
+            (letrec ((ans (get-most-common (hash-ref longest-chain prev-chain)))
+                     (occurences (hash-ref (hash-ref longest-chain prev-chain) ans)))
+              (cons (list ans occurences (hash-sum (hash-ref longest-chain prev-chain))) (if (empty? prev)
+                                                                                             (get-most-common-for-each  (drop-right chains 1)
+                                                                                                                        empty)
+                                                                                             (get-most-common-for-each (drop-right chains 1)
+                                                                                                                       (drop-right prev 1)))))
+            (cons (list "" -1 1) (if (empty? prev)
+                                     (get-most-common-for-each  (drop-right chains 1)
+                                                                empty)
+                                     (get-most-common-for-each (drop-right chains 1)
+                                                               (drop-right prev 1))))))))
+
+
 
 ;;; Majority class.  Just use the most common occurence.
 ;;; majority-class : list[string] -> list[string]
