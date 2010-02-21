@@ -94,6 +94,11 @@
       ;;(printf "Guess: ~a~n" ans))))
       (accuracy ans (parse-file test)))))
 
+(define (run-weighting train test n)
+    (letrec ((first-half (substring train 0 (/ (string-length train) 2)))
+           (second-half (substring train (/ (string-length train) 2)))
+           (weights (crunch 100 1000 n first-half second-half)))
+      (run-ensemble train test n weights)))
 
 ;; Use chains of n.
 (define (predict-ngram test-set n chains (prev empty))
@@ -248,12 +253,12 @@
       (cons (/ 1 (func choices n)) (gen-inverse (- n 1) choices func))))
 
 
-(define (crunch n max len (best empty) (acc 0))
+(define (crunch n max len train test (best empty) (acc 0))
   (printf "Iteration: ~a, Best: ~a, Accuracy: ~a~n" n best acc)
   (if (= n 0)
-      (list best acc)
+      best
       (letrec ((tuple (rand-list len max))
-               (newacc (run-ensemble "data/Training_5B.txt" "data/Testing_5B.txt" len tuple)))
+               (newacc (run-ensemble train test len tuple)))
        (printf "This time: ~a, Accuracy: ~a~n" tuple newacc)
         (if (> newacc acc)
             (crunch (- n 1) max len tuple newacc)
