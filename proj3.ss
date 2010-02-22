@@ -2,6 +2,9 @@
 
 (require 2htdp/batch-io)
 
+
+;; ========= Utility Functions ================
+
 ;; Parse a file and return a list of strings.
 ;; parse-file: string -> list[string]
 (define (parse-file filename)
@@ -82,16 +85,6 @@
     (let ((ans (predict-ngram (parse-file test) n chains peek)))
       (printf "Accuracy: ~a~n" (accuracy ans (parse-file test) peek))
       (printf "Guess: ~a~n" ans))))
-
-;; Runs ensemble models
-(define (run-ensemble train test n weights)
-  (set! NUM_READ 0)
-  (let ((chains (reverse (make-chains n train))))
-    (set! NUM_READ (length train))
-    (let ((ans (predict-ensemble test n chains weights)))
-      ;;(printf "Accuracy: ~a~n" (accuracy ans (parse-file test)))
-      ;;(printf "Guess: ~a~n" ans))))
-      (list ans (accuracy ans test false)))))
 
 (define (run-weighting train test n)
   (printf "Training a model...")
