@@ -87,18 +87,19 @@
 ;; Runs ensemble models
 (define (run-ensemble train test n weights)
   (set! NUM_READ 0)
-  (let ((chains (reverse (make-chains n (parse-file train)))))
-    (set! NUM_READ (length (parse-file train)))
-    (let ((ans (predict-ensemble (parse-file test) n chains weights)))
+  (let ((chains (reverse (make-chains n train))))
+    (set! NUM_READ (length train))
+    (let ((ans (predict-ensemble test n chains weights)))
       ;;(printf "Accuracy: ~a~n" (accuracy ans (parse-file test)))
       ;;(printf "Guess: ~a~n" ans))))
-      (accuracy ans (parse-file test)))))
+      (accuracy ans test))))
 
 (define (run-weighting train test n)
-    (letrec ((first-half (substring train 0 (/ (string-length train) 2)))
-           (second-half (substring train (/ (string-length train) 2)))
-           (weights (crunch 100 1000 n first-half second-half)))
-      (run-ensemble train test n weights)))
+    (letrec ((train-data (parse-file train))
+             (first-half (drop-right train-data (/ (length train-data) 2)))
+             (second-half (take-right train-data (/ (length train-data) 2)))
+             (weights (crunch 100 1000 n first-half second-half)))
+      (run-ensemble train-data (parse-file test) n weights)))
 
 ;; Use chains of n.
 (define (predict-ngram test-set n chains (prev empty))
@@ -261,13 +262,16 @@
                (newacc (run-ensemble train test len tuple)))
        (printf "This time: ~a, Accuracy: ~a~n" tuple newacc)
         (if (> newacc acc)
-            (crunch (- n 1) max len tuple newacc)
-            (crunch (- n 1) max len best acc)))))
+            (crunch (- n 1) max len train test tuple newacc)
+            (crunch (- n 1) max len train test best acc)))))
 
 (define (rand-list len max)
   (if (= len 0)
       empty
       (cons (random max) (rand-list (- len 1) max))))
+
+(define (generate-frequencies strs)
+  (hash-ref (first (make-chains 1 strs)) ""))
 
 ;; pretty-print a hash (TODO: fix this when i'm not lazy)
 (define (hash-print h (spaces 0))
