@@ -93,7 +93,7 @@
     (let ((ans (predict-ensemble test n chains weights)))
       ;;(printf "Accuracy: ~a~n" (accuracy ans (parse-file test)))
       ;;(printf "Guess: ~a~n" ans))))
-      (accuracy ans test))))
+      (accuracy ans test false))))
 
 (define (run-weighting train test n)
     (letrec ((train-data (parse-file train))
@@ -280,12 +280,10 @@
 
 
 (define (crunch n max len train test (best empty) (acc 0))
-  (printf "Iteration: ~a, Best: ~a, Accuracy: ~a~n" n best acc)
-  (if (= n 0)
+   (if (= n 0)
       best
       (letrec ((tuple (rand-list len max))
                (newacc (run-ensemble train test len tuple)))
-       (printf "This time: ~a, Accuracy: ~a~n" tuple newacc)
         (if (> newacc acc)
             (crunch (- n 1) max len train test tuple newacc)
             (crunch (- n 1) max len train test best acc)))))
