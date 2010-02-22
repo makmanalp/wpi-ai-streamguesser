@@ -76,12 +76,13 @@
             (make-chains (- n 1) train))))
 
 ;; Runs the ngram models
-(define (run train test n)
+(define (run train test n (peek false))
   (set! NUM_READ 0)
+  (set! PEEK-FREQ false)
   (let ((chains (reverse (make-chains n (parse-file train)))))
     (set! NUM_READ (length (parse-file train)))
-    (let ((ans (predict-ngram (parse-file test) n chains)))
-      (printf "Accuracy: ~a~n" (accuracy ans (parse-file test)))
+    (let ((ans (predict-ngram (parse-file test) n chains peek)))
+      (printf "Accuracy: ~a~n" (accuracy ans (parse-file test) peek))
       (printf "Guess: ~a~n" ans))))
 
 ;; Runs ensemble models
@@ -101,21 +102,41 @@
              (weights (crunch 100 1000 n first-half second-half)))
       (run-ensemble train-data (parse-file test) n weights)))
 
+(define PEEK-FREQ false)
+
+(define (remove-from-chains letter chains)
+  (if (empty? chains)
+      empty
+      (begin
+        (hash-map (first chains) (lambda (k v) (hash-set! v letter -1)))
+        (remove-from-chains letter (rest chains)))))
+
 ;; Use chains of n.
-(define (predict-ngram test-set n chains (prev empty))
+(define (predict-ngram test-set n chains (peek false) (prev empty))
+  (if peek
+      (set! PEEK-FREQ (generate-frequencies test-set))
+      peek)
+  (if (hash? PEEK-FREQ)
+      (hash-map PEEK-FREQ (lambda (k v) (if (= v 0)
+                                            (remove-from-chains k chains)
+                                            false)))
+      false)
   (if (empty? test-set)
       empty
       (let  ;; This is the guess!
           ((guess (generate-guess prev chains)))
         ;; Update the model.
         (let ((curr (first test-set)))
+          (if (hash? PEEK-FREQ)
+              (hash-set! PEEK-FREQ curr (- (hash-ref PEEK-FREQ curr) 1))
+              false)
           (set! NUM_READ (+ NUM_READ 1))
           (add-to-model prev chains curr)
           (if (= n 1)
               (cons guess (predict-ngram (rest test-set) n chains empty))
               (if (> (length prev) (- n 2))
-                  (cons guess (predict-ngram (rest test-set) n chains (append (rest prev) (list curr))))
-                  (cons guess (predict-ngram (rest test-set) n chains (append prev (list curr))))))))))
+                  (cons guess (predict-ngram (rest test-set) n chains false (append (rest prev) (list curr))))
+                  (cons guess (predict-ngram (rest test-set) n chains false (append prev (list curr))))))))))
 
 
 ;; Use predict ensemble to compare weighted probabilities with different chain lengths.
@@ -218,9 +239,13 @@
 
 ;; Get the accuracy of the answer set based on the test set.
 ;; accuracy : list[string] list[string] -> number
-(define (accuracy answer test-set)
-  (* 1.0 (/ (num-correct-answers answer test-set 0)
-            (length answer))))
+(define (accuracy answer test-set peek)
+  (if peek
+      (* 1.0 (/ (- (num-correct-answers answer test-set 0) 5)
+                (length answer)))      
+      (* 1.0 (/ (num-correct-answers answer test-set 0)
+                (length answer)))))
+                                       
 
 ;; Get the number of correct answers
 ;; num-correct-answers : list[string] list[string] -> number
