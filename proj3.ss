@@ -2,6 +2,7 @@
 
 (require 2htdp/batch-io)
 
+(define PEEK-FREQ false)
 
 ;; ========= Utility Functions ================
 
@@ -18,6 +19,39 @@
       (if (= n 0)
           (first alist)
           (get-nth (rest alist) (- n 1)))))
+
+;; ========= Main Functions ================
+
+;; Runs the ngram models
+;; run-train : string string num bool : void
+;; Give it training file name, test file name, max length of markov chains to
+;; generate and whether to peek or not.
+(define (run train test n (peek false))
+  (set! NUM_READ 0)
+  (set! PEEK-FREQ false)
+  (let ((chains (reverse (make-chains n (parse-file train)))))
+    (set! NUM_READ (length (parse-file train)))
+    (let ((ans (predict-ngram (parse-file test) n chains peek)))
+      (printf "Accuracy: ~a~n" (accuracy ans (parse-file test) peek))
+      (printf "Guess: ~a~n" ans))))
+
+;; Runs the weighted ensemble learning model
+;; run-train : string string num bool : void
+;; Give it training file name, test file name, max length of markov chains to
+;; generate. Randomly generates weights on the test data first.
+(define (run-weighting train test n)
+  (printf "Training a model...")
+  (letrec ((train-data (parse-file train))
+           (first-half (drop-right train-data (/ (length train-data) 2)))
+           (second-half (take-right train-data (/ (length train-data) 2)))
+           (weights (crunch 100 1000 n first-half second-half))
+           (ans (run-ensemble train-data (parse-file test) n weights)))
+    (printf "Weights: ~a~n" weights)
+    (printf "Guess: ~a~n" (first ans))
+    (printf "Accuracy: ~a~n" (second ans))))
+
+
+;; ========= Helper Functions ================
 
 ;; Update frequencies list from a sequence
 ;; count-occurences : list(string) -> hash
@@ -76,28 +110,6 @@
       (cons (count-occurences train n)
             (make-chains (- n 1) train))))
 
-;; Runs the ngram models
-(define (run train test n (peek false))
-  (set! NUM_READ 0)
-  (set! PEEK-FREQ false)
-  (let ((chains (reverse (make-chains n (parse-file train)))))
-    (set! NUM_READ (length (parse-file train)))
-    (let ((ans (predict-ngram (parse-file test) n chains peek)))
-      (printf "Accuracy: ~a~n" (accuracy ans (parse-file test) peek))
-      (printf "Guess: ~a~n" ans))))
-
-(define (run-weighting train test n)
-  (printf "Training a model...")
-  (letrec ((train-data (parse-file train))
-           (first-half (drop-right train-data (/ (length train-data) 2)))
-           (second-half (take-right train-data (/ (length train-data) 2)))
-           (weights (crunch 100 1000 n first-half second-half))
-           (ans (run-ensemble train-data (parse-file test) n weights)))
-    (printf "Weights: ~a~n" weights)
-    (printf "Guess: ~a~n" (first ans))
-    (printf "Accuracy: ~a~n" (second ans))))
-
-(define PEEK-FREQ false)
 
 (define (remove-from-chains letter chains)
   (if (empty? chains)
