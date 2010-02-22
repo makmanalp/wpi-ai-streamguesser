@@ -237,22 +237,16 @@
 
 
 
-;; Majority class.  Just use the most common occurence.
-;; majority-class : list[string] -> list[string]
-(define (majority-class test-set freq)
-  (if (empty? test-set)
-      empty
-      (cons (get-most-common freq) (majority-class (rest test-set) freq))))
+;; ========= Statistics Functions ================
 
 ;; Get the accuracy of the answer set based on the test set.
 ;; accuracy : list[string] list[string] -> number
 (define (accuracy answer test-set peek)
   (if peek
       (* 1.0 (/ (- (num-correct-answers answer test-set 0) 5)
-                (length answer)))      
+                (length answer)))
       (* 1.0 (/ (num-correct-answers answer test-set 0)
                 (length answer)))))
-                                       
 
 ;; Get the number of correct answers
 ;; num-correct-answers : list[string] list[string] -> number
@@ -268,6 +262,8 @@
 ;; get-random-guess-rate :  void -> number
 (define (get-random-guess-rate freq)
   (/ 1.0 (hash-count (hash-ref (first freq) ""))))
+
+;; ========= Math Functions ================
 
 (define (fact x)
   (if (= x 0)
@@ -285,6 +281,7 @@
       empty
       (cons (/ 1 (func choices n)) (gen-inverse (- n 1) choices func))))
 
+;; ========= Weighting Training Functions ================
 
 (define (crunch n max len train test (best empty) (acc 0))
    (if (= n 0)
@@ -300,18 +297,8 @@
       empty
       (cons (random max) (rand-list (- len 1) max))))
 
+
+;; ========= Weighting Training Functions ================
+
 (define (generate-frequencies strs)
   (hash-ref (first (make-chains 1 strs)) ""))
-
-;; pretty-print a hash (TODO: fix this when i'm not lazy)
-(define (hash-print h (spaces 0))
-  (hash-map
-    h
-    (lambda (k v)
-      (printf "~a~n" k)
-      (cond
-        [(hash? v)
-         (hash-print v (+ 1 spaces))]
-        [else
-          (printf "~a~n" v)]))))
-
