@@ -137,7 +137,7 @@
           (set! NUM_READ (+ NUM_READ 1))
           (add-to-model prev chains curr)
           (if (= n 1)
-              (cons guess (predict-ngram (rest test-set) n chains empty))
+              (cons guess (predict-ngram (rest test-set) n chains false empty))
               (if (> (length prev) (- n 2))
                   (cons guess (predict-ngram (rest test-set) n chains false (append (rest prev) (list curr))))
                   (cons guess (predict-ngram (rest test-set) n chains false (append prev (list curr))))))))))
