@@ -93,14 +93,18 @@
     (let ((ans (predict-ensemble test n chains weights)))
       ;;(printf "Accuracy: ~a~n" (accuracy ans (parse-file test)))
       ;;(printf "Guess: ~a~n" ans))))
-      (accuracy ans test false))))
+      (list ans (accuracy ans test false)))))
 
 (define (run-weighting train test n)
-    (letrec ((train-data (parse-file train))
-             (first-half (drop-right train-data (/ (length train-data) 2)))
-             (second-half (take-right train-data (/ (length train-data) 2)))
-             (weights (crunch 100 1000 n first-half second-half)))
-      (run-ensemble train-data (parse-file test) n weights)))
+  (printf "Training a model...")
+  (letrec ((train-data (parse-file train))
+           (first-half (drop-right train-data (/ (length train-data) 2)))
+           (second-half (take-right train-data (/ (length train-data) 2)))
+           (weights (crunch 100 1000 n first-half second-half))
+           (ans (run-ensemble train-data (parse-file test) n weights)))
+    (printf "Weights: ~a~n" weights)
+    (printf "Guess: ~a~n" (first ans))
+    (printf "Accuracy: ~a~n" (second ans))))
 
 (define PEEK-FREQ false)
 
@@ -283,7 +287,7 @@
    (if (= n 0)
       best
       (letrec ((tuple (rand-list len max))
-               (newacc (run-ensemble train test len tuple)))
+               (newacc (second (run-ensemble train test len tuple))))
         (if (> newacc acc)
             (crunch (- n 1) max len train test tuple newacc)
             (crunch (- n 1) max len train test best acc)))))
