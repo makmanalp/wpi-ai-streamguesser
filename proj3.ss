@@ -2,8 +2,6 @@
 
 (require 2htdp/batch-io)
 
-(define NUM_READ 0)
-
 ;; Parse a file and return a list of strings.
 ;; parse-file: string -> list[string]
 (define (parse-file filename)
