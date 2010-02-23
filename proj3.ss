@@ -51,9 +51,11 @@
     (printf "Accuracy: ~a~n" (second ans))))
 
 
-;; ========= Helper Functions ================
+;; ========= Freq Chain List Functions ================
+;; Functions that work on the frequency chain list. It's an ordered list that
+;; contains markov chains of length 1, 2, 3 ...
 
-;; Update frequencies list from a sequence
+;; Update freq chain list from a sequence
 ;; count-occurences : list(string) -> hash
 (define (count-occurences training-set chain-length (prev empty) (freq (make-hash)))
   (if (empty? training-set)
@@ -78,19 +80,19 @@
           (if (hash-has-key? prev-hash curr)
               (hash-set! prev-hash curr (+ (hash-ref prev-hash curr) 1))
               (hash-set! prev-hash curr 1))))
-      (begin 
+      (begin
         (hash-set! freq prev-chain (make-hash))
         (hash-set! (hash-ref freq prev-chain) curr 1))))
 
 
-;; Get the most common symbol in freq
+;; Get the most common symbol in freq chain list
 (define (get-most-common freq)
   (let ((firstIndex (hash-iterate-first freq)))
     (hash-iterate-key freq (get-most-common-index (hash-iterate-value freq firstIndex) 
                                                   firstIndex
                                                   firstIndex
                                                   freq))))
-
+;; Subfunction of above. private.
 (define (get-most-common-index best index bestIndex freq)
   (let ((curr (hash-iterate-value freq index)))
     (if (false? (hash-iterate-next freq index))
@@ -110,58 +112,13 @@
       (cons (count-occurences train n)
             (make-chains (- n 1) train))))
 
-
+;; Remove a given letter from freq chain list.
 (define (remove-from-chains letter chains)
   (if (empty? chains)
       empty
       (begin
         (hash-map (first chains) (lambda (k v) (hash-set! v letter -1)))
         (remove-from-chains letter (rest chains)))))
-
-;; Use chains of n.
-(define (predict-ngram test-set n chains (peek false) (prev empty))
-  (if peek
-      (set! PEEK-FREQ (generate-frequencies test-set))
-      peek)
-  (if (hash? PEEK-FREQ)
-      (hash-map PEEK-FREQ (lambda (k v) (if (= v 0)
-                                            (remove-from-chains k chains)
-                                            false)))
-      false)
-  (if (empty? test-set)
-      empty
-      (let  ;; This is the guess!
-          ((guess (generate-guess prev chains)))
-        ;; Update the model.
-        (let ((curr (first test-set)))
-          (if (hash? PEEK-FREQ)
-              (hash-set! PEEK-FREQ curr (- (hash-ref PEEK-FREQ curr) 1))
-              false)
-          (set! NUM_READ (+ NUM_READ 1))
-          (add-to-model prev chains curr)
-          (if (= n 1)
-              (cons guess (predict-ngram (rest test-set) n chains false empty))
-              (if (> (length prev) (- n 2))
-                  (cons guess (predict-ngram (rest test-set) n chains false (append (rest prev) (list curr))))
-                  (cons guess (predict-ngram (rest test-set) n chains false (append prev (list curr))))))))))
-
-
-;; Use predict ensemble to compare weighted probabilities with different chain lengths.
-(define (predict-ensemble test-set n chains weights (prev empty))
-  (if (empty? test-set)
-      empty
-      (let  ;; This is the guess!
-          ((guess (generate-ensemble-guess prev chains weights)))
-        ;; Update the model.
-        (let ((curr (first test-set)))
-          (set! NUM_READ (+ NUM_READ 1))
-          (add-to-model prev chains curr)
-          (if (= n 1)
-              (cons guess (predict-ensemble (rest test-set) n chains weights empty))
-              (if (> (length prev) (- n 2))
-                  (cons guess (predict-ensemble (rest test-set) n chains weights (append (rest prev) (list curr))))
-                  (cons guess (predict-ensemble (rest test-set) n chains weights (append prev (list curr))))))))))
-
 
 ;; Adds curr under prev in all of the chains in chains.
 (define (add-to-model prev chains curr)
@@ -176,28 +133,6 @@
             (add-to-model (rest prev)
                           (drop-right chains 1)
                           curr)))))
-
-;; Generate a guess by picking the most likely thing in chains starting with prev.
-;; If you can't find it, use the next smaller chain.
-(define (generate-guess prev chains)
-  (if (empty? chains)
-      empty
-      (let ((prev-chain (string-join prev ""))
-            (longest-chain (last chains)))
-        (if (hash-has-key? longest-chain prev-chain)
-            (get-most-common (hash-ref longest-chain prev-chain))
-            (if (empty? prev)
-                (generate-guess empty
-                                (drop-right chains 1))
-                (generate-guess (drop-right prev 1)
-                                (drop-right chains 1)))))))
-
-;; Find the most probable giving the weights in all of the chains.
-(define (generate-ensemble-guess prev chains weights)
-  (most-probable (map (lambda (freq-tuple weight) (list (first freq-tuple) (* weight (/ (second freq-tuple) (third freq-tuple)))))
-                      (reverse (get-most-common-for-each chains prev))
-                      weights)))
-
 
 ;; Sum all of the values in the hash;
 ;; hash-sum : hash -> number
@@ -235,6 +170,74 @@
                                      (get-most-common-for-each (drop-right chains 1)
                                                                (drop-right prev 1))))))))
 
+
+;; ============ Prediction Functions ================
+
+
+;; Use chains of n.
+(define (predict-ngram test-set n chains (peek false) (prev empty))
+  (if peek
+      (set! PEEK-FREQ (generate-frequencies test-set))
+      peek)
+  (if (hash? PEEK-FREQ)
+      (hash-map PEEK-FREQ (lambda (k v) (if (= v 0)
+                                            (remove-from-chains k chains)
+                                            false)))
+      false)
+  (if (empty? test-set)
+      empty
+      (let  ;; This is the guess!
+          ((guess (generate-guess prev chains)))
+        ;; Update the model.
+        (let ((curr (first test-set)))
+          (if (hash? PEEK-FREQ)
+              (hash-set! PEEK-FREQ curr (- (hash-ref PEEK-FREQ curr) 1))
+              false)
+          (set! NUM_READ (+ NUM_READ 1))
+          (add-to-model prev chains curr)
+          (if (= n 1)
+              (cons guess (predict-ngram (rest test-set) n chains false empty))
+              (if (> (length prev) (- n 2))
+                  (cons guess (predict-ngram (rest test-set) n chains false (append (rest prev) (list curr))))
+                  (cons guess (predict-ngram (rest test-set) n chains false (append prev (list curr))))))))))
+
+;; Generate a guess by picking the most likely thing in chains starting with prev.
+;; If you can't find it, use the next smaller chain. (cascading, fallback,
+;; whatever you call it.)
+(define (generate-guess prev chains)
+  (if (empty? chains)
+      empty
+      (let ((prev-chain (string-join prev ""))
+            (longest-chain (last chains)))
+        (if (hash-has-key? longest-chain prev-chain)
+            (get-most-common (hash-ref longest-chain prev-chain))
+            (if (empty? prev)
+                (generate-guess empty
+                                (drop-right chains 1))
+                (generate-guess (drop-right prev 1)
+                                (drop-right chains 1)))))))
+
+;; Use predict ensemble to compare weighted probabilities with different chain lengths.
+(define (predict-ensemble test-set n chains weights (prev empty))
+  (if (empty? test-set)
+      empty
+      (let  ;; This is the guess!
+          ((guess (generate-ensemble-guess prev chains weights)))
+        ;; Update the model.
+        (let ((curr (first test-set)))
+          (set! NUM_READ (+ NUM_READ 1))
+          (add-to-model prev chains curr)
+          (if (= n 1)
+              (cons guess (predict-ensemble (rest test-set) n chains weights empty))
+              (if (> (length prev) (- n 2))
+                  (cons guess (predict-ensemble (rest test-set) n chains weights (append (rest prev) (list curr))))
+                  (cons guess (predict-ensemble (rest test-set) n chains weights (append prev (list curr))))))))))
+
+;; Find the most probable giving the weights in all of the chains.
+(define (generate-ensemble-guess prev chains weights)
+  (most-probable (map (lambda (freq-tuple weight) (list (first freq-tuple) (* weight (/ (second freq-tuple) (third freq-tuple)))))
+                      (reverse (get-most-common-for-each chains prev))
+                      weights)))
 
 
 ;; ========= Statistics Functions ================
