@@ -27,13 +27,12 @@
 ;; Give it training file name, test file name, max length of markov chains to
 ;; generate and whether to peek or not.
 (define (run train test n (peek false))
-  (set! NUM_READ 0)
   (set! PEEK-FREQ false)
   (let ((chains (reverse (make-chains n (parse-file train)))))
-    (set! NUM_READ (length (parse-file train)))
     (let ((ans (predict-ngram (parse-file test) n chains peek)))
+      (printf "Guess: ~a~n" ans)
       (printf "Accuracy: ~a~n" (accuracy ans (parse-file test) peek))
-      (printf "Guess: ~a~n" ans))))
+      (printf "Random Guess Accuracy: ~a~n" (get-random-guess-rate chains)))))
 
 ;; Runs the weighted ensemble learning model
 ;; run-train : string string num bool : void
@@ -48,15 +47,14 @@
            (ans (run-ensemble train-data (parse-file test) n weights)))
     (printf "Weights: ~a~n" weights)
     (printf "Guess: ~a~n" (first ans))
-    (printf "Accuracy: ~a~n" (second ans))))
+    (printf "Accuracy: ~a~n" (second ans))
+    (printf "Random Guess Accuracy: ~a~n" (get-random-guess-rate (reverse (make-chains n train-data))))))
 
 ;; ======== Main Helper Funcs ========================
 
 ;; Runs ensemble models. Private.
 (define (run-ensemble train test n weights)
-  (set! NUM_READ 0)
   (let ((chains (reverse (make-chains n train))))
-    (set! NUM_READ (length train))
     (let ((ans (predict-ensemble test n chains weights)))
       ;;(printf "Accuracy: ~a~n" (accuracy ans (parse-file test)))
       ;;(printf "Guess: ~a~n" ans))))
@@ -204,7 +202,6 @@
           (if (hash? PEEK-FREQ)
               (hash-set! PEEK-FREQ curr (- (hash-ref PEEK-FREQ curr) 1))
               false)
-          (set! NUM_READ (+ NUM_READ 1))
           (add-to-model prev chains curr)
           (if (= n 1)
               (cons guess (predict-ngram (rest test-set) n chains false empty))
@@ -236,7 +233,6 @@
           ((guess (generate-ensemble-guess prev chains weights)))
         ;; Update the model.
         (let ((curr (first test-set)))
-          (set! NUM_READ (+ NUM_READ 1))
           (add-to-model prev chains curr)
           (if (= n 1)
               (cons guess (predict-ensemble (rest test-set) n chains weights empty))
