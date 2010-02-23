@@ -50,6 +50,17 @@
     (printf "Guess: ~a~n" (first ans))
     (printf "Accuracy: ~a~n" (second ans))))
 
+;; ======== Main Helper Funcs ========================
+
+;; Runs ensemble models. Private.
+(define (run-ensemble train test n weights)
+  (set! NUM_READ 0)
+  (let ((chains (reverse (make-chains n train))))
+    (set! NUM_READ (length train))
+    (let ((ans (predict-ensemble test n chains weights)))
+      ;;(printf "Accuracy: ~a~n" (accuracy ans (parse-file test)))
+      ;;(printf "Guess: ~a~n" ans))))
+      (list ans (accuracy ans test false)))))
 
 ;; ========= Freq Chain List Functions ================
 ;; Functions that work on the frequency chain list. It's an ordered list that
